@@ -62,7 +62,7 @@ func NewDHashClient(dhstoreURL, stiURL string, options ...Option) (*DHashClient,
 
 	return &DHashClient{
 		c:             opts.httpClient,
-		dhFindURL:     dhsURL.JoinPath(findPath),
+		dhFindURL:     dhsURL.JoinPath(findMhPath),
 		dhMetadataURL: dhsURL.JoinPath(metadataPath),
 		pcache:        pcache,
 	}, nil

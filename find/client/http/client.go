@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/ipfs/go-cid"
 	"github.com/ipni/go-libipni/apierror"
 	"github.com/ipni/go-libipni/find/client"
 	"github.com/ipni/go-libipni/find/model"
@@ -18,7 +19,8 @@ import (
 )
 
 const (
-	findPath      = "multihash"
+	findCidPath   = "cid"
+	findMhPath    = "multihash"
 	providersPath = "providers"
 	statsPath     = "stats"
 )
@@ -26,7 +28,8 @@ const (
 // Client is an http client for the indexer find API
 type Client struct {
 	c            *http.Client
-	findURL      *url.URL
+	findCidURL   *url.URL
+	findMhURL    *url.URL
 	providersURL *url.URL
 	statsURL     *url.URL
 }
@@ -53,7 +56,8 @@ func New(baseURL string, options ...Option) (*Client, error) {
 
 	return &Client{
 		c:            opts.httpClient,
-		findURL:      u.JoinPath(findPath),
+		findCidURL:   u.JoinPath(findCidPath),
+		findMhURL:    u.JoinPath(findMhPath),
 		providersURL: u.JoinPath(providersPath),
 		statsURL:     u.JoinPath(statsPath),
 	}, nil
@@ -61,7 +65,7 @@ func New(baseURL string, options ...Option) (*Client, error) {
 
 // Find looks up content entries by multihash.
 func (c *Client) Find(ctx context.Context, m multihash.Multihash) (*model.FindResponse, error) {
-	u := c.findURL.JoinPath(m.B58String())
+	u := c.findMhURL.JoinPath(m.B58String())
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
 	if err != nil {
 		return nil, err
@@ -79,10 +83,21 @@ func (c *Client) FindBatch(ctx context.Context, mhs []multihash.Multihash) (*mod
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.findURL.String(), bytes.NewBuffer(data))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.findMhURL.String(), bytes.NewBuffer(data))
 	if err != nil {
 		return nil, err
 	}
+	return c.sendRequest(req)
+}
+
+// FindCid looks up content entries by CID.
+func (c *Client) FindCid(ctx context.Context, contentID cid.Cid) (*model.FindResponse, error) {
+	u := c.findCidURL.JoinPath(contentID.String())
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
 	return c.sendRequest(req)
 }
 
